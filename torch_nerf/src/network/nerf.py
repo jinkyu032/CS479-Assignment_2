@@ -35,7 +35,31 @@ class NeRF(nn.Module):
         super().__init__()
 
         # TODO
-        raise NotImplementedError("Task 1")
+        # Initialize the sequence of MLP layers, which has 256 dimensions for each hidden layer.
+        MLP_firstinput_to_beforeskip = []
+        MLP_firstinput_to_beforeskip.append(nn.Linear(pos_dim, feat_dim))
+        MLP_firstinput_to_beforeskip.append(nn.ReLU())
+        for _ in range(3):
+            MLP_firstinput_to_beforeskip.append(nn.Linear(feat_dim, feat_dim))
+            MLP_firstinput_to_beforeskip.append(nn.ReLU())
+        self.MLP_firstinput_to_beforeskip = nn.Sequential(*MLP_firstinput_to_beforeskip)
+
+        MLP_skip_to_beforeviewdir = []
+        MLP_skip_to_beforeviewdir.append(nn.Linear(feat_dim + pos_dim, feat_dim))
+        MLP_skip_to_beforeviewdir.append(nn.ReLU())
+        for _ in range(3):
+            MLP_skip_to_beforeviewdir.append(nn.Linear(feat_dim, feat_dim))
+            MLP_skip_to_beforeviewdir.append(nn.ReLU())
+        self.MLP_skip_to_beforeviewdir = nn.Sequential(*MLP_skip_to_beforeviewdir)
+
+
+        self.view_layer = nn.Linear(feat_dim, feat_dim + 1)
+
+        self.additional_layer = nn.Linear(feat_dim + view_dir_dim, feat_dim/2) 
+        self.final_layer = nn.Linear(feat_dim/2, 3)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
 
     @jaxtyped
     @typechecked
@@ -58,6 +82,12 @@ class NeRF(nn.Module):
             sigma: The density predictions evaluated at the given sample points.
             radiance: The radiance predictions evaluated at the given sample points.
         """
-
-        # TODO
-        raise NotImplementedError("Task 1")
+        feat = self.MLP_firstinput_to_beforeskip(pos)
+        feat = self.MLP_skip_to_beforeviewdir(torch.cat([pos, feat], dim=-1))
+        sigma_feat = self.view_layer(feat)
+        sigma = torch.relu(sigma_feat[..., 0])
+        feat = sigma_feat[..., 1:]
+        feat = self.relu(self.additional_layer(torch.cat([feat, view_dir], dim=-1)))
+        rgb = self.sigmoid(self.final_layer(feat))
+        result = (sigma, rgb)
+        return result

@@ -76,8 +76,27 @@ class RaySamples:
         Returns:
             coords: Coordinates of points sampled along rays in the ray bundle.
         """
-        # TODO
-        raise NotImplementedError("Task 2")
+
+        origins: Float[torch.Tensor, "*batch_size 3"] = self.ray_bundle.origins
+        directions: Float[torch.Tensor, "*batch_size 3"] = self.ray_bundle.directions
+        t_samples: Float[torch.Tensor, "num_ray num_sample"] = self.t_samples
+
+        #duplicate origins to [num_ray num_sample 3]
+        origins = origins[:, None, :]
+        origins = origins.repeat(1, self.t_samples.shape[1], 1)
+
+        #duplicate directions to [num_ray num_sample 3]
+        directions = directions[:, None, :]
+        directions = directions.repeat(1, self.t_samples.shape[1], 1)
+
+        
+        
+        #duplicate t_samples to [num_ray num_sample 3]
+        t_samples = t_samples.unsqueeze(-1)
+        t_samples = t_samples.repeat(1, 1, 3)
+        
+        results: Float[torch.Tensor, "num_ray num_sample 3"] = origins + t_samples * directions
+        return results
 
     @jaxtyped
     @typechecked
