@@ -55,8 +55,8 @@ class NeRF(nn.Module):
 
         self.view_layer = nn.Linear(feat_dim, feat_dim + 1)
 
-        self.additional_layer = nn.Linear(feat_dim + view_dir_dim, feat_dim/2) 
-        self.final_layer = nn.Linear(feat_dim/2, 3)
+        self.additional_layer = nn.Linear(feat_dim + view_dir_dim, int(feat_dim/2) )
+        self.final_layer = nn.Linear(int(feat_dim/2), 3)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
@@ -85,9 +85,8 @@ class NeRF(nn.Module):
         feat = self.MLP_firstinput_to_beforeskip(pos)
         feat = self.MLP_skip_to_beforeviewdir(torch.cat([pos, feat], dim=-1))
         sigma_feat = self.view_layer(feat)
-        sigma = torch.relu(sigma_feat[..., 0])
+        sigma = torch.relu(sigma_feat[..., :1])
         feat = sigma_feat[..., 1:]
         feat = self.relu(self.additional_layer(torch.cat([feat, view_dir], dim=-1)))
         rgb = self.sigmoid(self.final_layer(feat))
-        result = (sigma, rgb)
-        return result
+        return sigma, rgb

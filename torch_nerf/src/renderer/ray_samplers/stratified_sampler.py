@@ -39,7 +39,7 @@ class StratifiedSampler(RaySamplerBase):
             )
         else:
             t_samples = self.sample_along_rays_uniform(ray_bundle, num_sample)
-
+        
         ray_samples = RaySamples(ray_bundle, t_samples)
         return ray_samples
 
@@ -65,7 +65,19 @@ class StratifiedSampler(RaySamplerBase):
 
         # TODO
         # HINT: Freely use the provided methods 'create_t_bins' and 'map_t_to_euclidean'
-        raise NotImplementedError("Task 2")
+
+        num_ray = ray_bundle.origins.shape[0]
+        t_bins = self.create_t_bins(num_sample + 1, ray_bundle.origins.device)
+        # Uniformly sample [num_ray num_sample].
+        uniform_samples:Float[torch.Tensor, "num_ray num_sample"] = torch.rand(num_ray, num_sample, device=ray_bundle.origins.device)
+        for j in range(uniform_samples.shape[1]):
+            uniform_samples[:, j] = self.map_t_to_euclidean(uniform_samples[:, j], t_bins[j].item(), t_bins[j+1].item())
+        #Mapping the uniform_samples to the Euclidean space.
+        t_samples = uniform_samples
+        for i in range(len(t_samples)):
+            t_samples[i] = self.map_t_to_euclidean(t_samples[i], ray_bundle.nears[i].item(), ray_bundle.fars[i].item())
+        
+        return t_samples
 
     @jaxtyped
     @typechecked
@@ -89,6 +101,8 @@ class StratifiedSampler(RaySamplerBase):
         # NOTE: The elements of 't_samples' must be sorted.
         t_samples = torch.cat([t_samples, new_t_samples], -1)
         t_samples, _ = torch.sort(t_samples, dim=-1)
+
+        
 
         return t_samples
 

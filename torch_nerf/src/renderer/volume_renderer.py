@@ -85,7 +85,7 @@ class VolumeRenderer(object):
         # consecutive sample points
         dir_norm = torch.norm(ray_dir, dim=1, keepdim=True)
         delta_t = delta_t * dir_norm
-
+        
         pts_chunks = torch.chunk(sample_pts, num_batch, dim=0)
         dir_chunks = torch.chunk(ray_dir, num_batch, dim=0)
         delta_chunks = torch.chunk(delta_t, num_batch, dim=0)
@@ -96,7 +96,7 @@ class VolumeRenderer(object):
         for pts_batch, dir_batch, delta_batch in zip(
             pts_chunks, dir_chunks, delta_chunks
         ):
-
+            
             # query the scene to get density and radiance
             sigma_batch, radiance_batch = target_scene.query_points(pts_batch, dir_batch)
 
