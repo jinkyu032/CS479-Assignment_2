@@ -45,8 +45,48 @@ class QuadratureIntegrator(IntegratorBase):
         # HINT: Look up the documentation of 'torch.cumsum'.
         sig_mul_del = sigma * delta
         opacity = 1 - torch.exp(-sig_mul_del)
-        transmittance = torch.cumsum(1 - opacity, dim=1)
+        #wrong ver
+        #transmittance = torch.cumsum(1 - opacity, dim=1)
+
+        #ver1
+        #transmittance = torch.exp(torch.cumsum(-sig_mul_del, dim=1))
+
+        #ver2
+        transmittance = torch.exp(torch.cat((torch.zeros((sig_mul_del.shape[0],1), device = sig_mul_del.device), torch.cumsum(-sig_mul_del[:,:-1], dim=1)), dim = 1))
+        
         weight_origin = (transmittance * opacity)
-        weight = weight_origin[:,:,None].repeat(1, 1, 3)
+        #weight = weight_origin[:,:,None].repeat(1, 1, 3)
+        weight = weight_origin.unsqueeze(dim=-1)
         C_r = torch.sum(radiance * weight, dim=1)
         return C_r, weight_origin
+
+
+
+        #solution code
+        # sigma_delta = sigma * delta
+
+        # # compute transmittance: T_{i}
+        # transmittance = torch.exp(
+        #     -torch.cumsum(
+        #         torch.cat(
+        #             [torch.zeros((sigma.shape[0], 1), device=sigma_delta.device), sigma_delta],
+        #             dim=-1,
+        #         ),
+        #         dim=-1,
+        #     )[..., :-1]
+        # )
+
+        # # compute alpha: (1 - exp (- sigma_{i} * delta_{i}))
+        # alpha = 1.0 - torch.exp(-sigma_delta)
+
+        # # compute weight - w_{i}
+        # w_i = transmittance * alpha
+
+        # # compute numerical integral to determine pixel colors
+        # # C = sum_{i=1}^{S} T_{i} * alpha_{i} * c_{i}
+        # rgb = torch.sum(
+        #     w_i.unsqueeze(-1) * radiance,
+        #     dim=1,
+        # )
+
+        # return rgb, w_i

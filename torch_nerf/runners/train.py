@@ -415,6 +415,7 @@ def main(cfg: DictConfig) -> None:
         )
         for loss_name, value in train_loss_dict.items():
             writer.add_scalar(f"train/{loss_name}", value, epoch)
+            print(f"train/{loss_name}", value, epoch)
 
         # validate
         if (epoch + 1) % cfg.train_params.validation.validate_every == 0:
@@ -430,6 +431,7 @@ def main(cfg: DictConfig) -> None:
             # log metrics
             for metric_name, value in val_metric_dict.items():
                 writer.add_scalar(f"val/{metric_name}", value, epoch)
+                print(f"val/{metric_name}", value, epoch)
 
             # log images
             for index in range(val_images.shape[0]):
